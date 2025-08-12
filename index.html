@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stacking Cake — Happy Birthday!</title>
+<style>
+  :root{
+    --bg1: #ff6fd8; /* vibrant pink */
+    --bg2: #ffbb45; /* bright orange */
+    --cake-plate: #fff;
+    /* responsive scale unit for vertical sizing of tiers */
+    --tier: clamp(36px, 6.5vh, 64px);
+    /* stage sizing */
+    --stage-w: clamp(280px, 80vw, 460px);
+    --stage-h: calc(var(--tier) * 9.5);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background: linear-gradient(180deg,var(--bg1),var(--bg2));
+    font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    overflow:hidden;
+  }
+
+  .stage{
+    width:var(--stage-w);
+    max-width:90vw;
+    height:var(--stage-h);
+    position:relative;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+  }
+
+  /* soft glow behind the cake */
+  .stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(ellipse at 50% 58%, rgba(255,255,255,0.38), rgba(255,255,255,0.12) 35%, transparent 60%);
+    z-index:0;
+    pointer-events:none;
+  }
+
+  /* cake area */
+  .cake {
+    width:72%;
+    height: calc(var(--tier) * 6);
+    position:relative;
+    display:flex;
+    align-items:flex-end;
+    justify-content:center;
+    pointer-events:none;
+  }
+
+  .layer {
+    position:absolute;
+    left:50%;
+    transform:translate(-50%, 120%); /* start off-screen below */
+    border-radius:12px;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.12);
+    opacity:0;
+  }
+
+  /* different layer widths & heights to look like cake tiers */
+  .layer.l1 { width:92%;  height:var(--tier); background: linear-gradient(180deg, #ff4f81, #ff87a9); z-index:10; }
+  .layer.l2 { width:84%;  height:var(--tier); background: linear-gradient(180deg, #ff8a4b, #ffb36b); z-index:20; }
+  .layer.l3 { width:76%;  height:var(--tier); background: linear-gradient(180deg, #ffd84d, #fff07a); z-index:30; }
+  .layer.l4 { width:68%;  height:var(--tier); background: linear-gradient(180deg, #3bd3a3, #7af5c8); z-index:40; }
+  .layer.l5 { width:60%;  height:var(--tier); background: linear-gradient(180deg, #49b6ff, #8ad1ff); z-index:50; }
+  .layer.l6 { width:44%;  height:var(--tier); background: linear-gradient(180deg, #b07bff, #d0afff); z-index:60; }
+
+  /* frosting top edge */
+  .layer::before{
+    content:'';
+    position:absolute;
+    left:0; right:0; top:-8px;
+    height:14px;
+    border-radius:12px 12px 6px 6px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6));
+    filter:blur(0.1px);
+    opacity:0.95;
+  }
+
+  /* stacked state */
+  .layer.stack {
+    transform: translate(-50%, 0);
+    opacity:1;
+    animation: popIn 280ms cubic-bezier(.2,.9,.2,1);
+  }
+
+  @keyframes popIn {
+    0%   { transform: translate(-50%, 8%) scale(0.95); opacity:0; }
+    60%  { transform: translate(-50%, -4%) scale(1.03); opacity:1; }
+    100% { transform: translate(-50%, 0) scale(1); opacity:1; }
+  }
+
+  /* space the stacked layers vertically */
+  .layer.l1.stack { bottom: 0; }
+  .layer.l2.stack { bottom: calc(var(--tier) * 1); }
+  .layer.l3.stack { bottom: calc(var(--tier) * 2); }
+  .layer.l4.stack { bottom: calc(var(--tier) * 3); }
+  .layer.l5.stack { bottom: calc(var(--tier) * 4); }
+  .layer.l6.stack { bottom: calc(var(--tier) * 5); }
+
+  /* plate */
+  .plate{
+    position:absolute;
+    bottom: calc(var(--tier) * -0.32);
+    left:50%;
+    transform:translateX(-50%);
+    width:123%;
+    height: calc(var(--tier) * 0.86);
+    background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,255,255,0.92));
+    border-radius: calc(var(--tier) * 0.75);
+    box-shadow:0 8px 20px rgba(0,0,0,0.12);
+    z-index:5;
+    opacity:0.95;
+  }
+
+  /* candles on top (hidden until top layer stacked) */
+  .candles{
+    position:absolute;
+    bottom: calc(var(--tier) * 6.25); /* aligned above top layer */
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap: calc(var(--tier) * 0.14);
+    z-index: 200;
+    opacity:0;
+    transition: opacity 400ms ease;
+  }
+  .candles.show { opacity:1; }
+
+  .candle{
+    width: calc(var(--tier) * 0.11);
+    height: calc(var(--tier) * 0.64);
+    background: #fff;
+    border-radius:3px;
+    position:relative;
+    box-shadow:0 1px 0 rgba(0,0,0,0.15), inset 0 -6px 6px rgba(0,0,0,0.05);
+  }
+  .candle::after{
+    content:"";
+    position:absolute;
+    top: calc(var(--tier) * -0.18);
+    left:50%;
+    transform:translateX(-50%);
+    width: calc(var(--tier) * 0.18);
+    height: calc(var(--tier) * 0.21);
+    background: radial-gradient(circle at 50% 35%, #ffcf33 0 30%, #ff9a00 60%, transparent 70%);
+    border-radius:50%;
+    filter: blur(0.5px);
+  }
+
+  /* message - hidden until stacked complete */
+  .message {
+    position:absolute;
+    bottom: calc(var(--tier) * 7.6);
+    left:50%;
+    transform:translateX(-50%) translateY(calc(var(--tier) * -0.18));
+    text-align:center;
+    width:100%;
+    opacity:0;
+    pointer-events:auto;
+    z-index: 300;
+  }
+  .message.show {
+    animation: reveal 450ms cubic-bezier(.16,.9,.2,1) forwards;
+  }
+  @keyframes reveal {
+    0% { transform:translateX(-50%) translateY(calc(var(--tier) * -0.18)); opacity:0; filter:blur(4px); }
+    100% { transform:translateX(-50%) translateY(0); opacity:1; filter:blur(0); }
+  }
+
+  .message h1{
+    margin:0;
+    font-size: clamp(1.4rem, 3.6vw + 0.4rem, 2.4rem);
+    letter-spacing:1px;
+    color:#fff;
+    text-shadow: 0 6px 18px rgba(0,0,0,0.28);
+  }
+  .message img.sticker{
+    width: clamp(110px, 28vw, 190px);
+    display:block;
+    margin: 0 auto calc(var(--tier) * 0.22);
+    animation: stickerWiggle 1600ms ease-in-out infinite alternate;
+    filter: drop-shadow(0 8px 18px rgba(0,0,0,0.35));
+    user-select:none;
+    -webkit-user-drag: none;
+  }
+  @keyframes stickerWiggle{
+    0% { transform: translateY(0) rotate(0deg); }
+    50%{ transform: translateY(-2px) rotate(1.6deg); }
+    100%{ transform: translateY(0) rotate(-1.6deg); }
+  }
+  .message p{
+    margin:6px 0 0;
+    color: #fff;
+    opacity:0.95;
+    font-weight:600;
+    font-size: clamp(0.9rem, 1.2vw + 0.2rem, 1.1rem);
+  }
+
+  /* small-height screens: scale tiers down a bit more */
+  @media (max-height: 620px){
+    :root{ --tier: clamp(28px, 6vh, 52px); }
+  }
+
+  /* confetti canvas sits above */
+  canvas#confetti {
+    position: absolute;
+    left:0; top:0;
+    width:100vw;
+    height:100vh;
+    pointer-events:none;
+    z-index:999;
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="cake" id="cake">
+      <div class="layer l1" id="l1"></div>
+      <div class="layer l2" id="l2"></div>
+      <div class="layer l3" id="l3"></div>
+      <div class="layer l4" id="l4"></div>
+      <div class="layer l5" id="l5"></div>
+      <div class="layer l6" id="l6"></div>
+
+      <div class="plate"></div>
+    </div>
+
+    <div class="candles" id="candles">
+      <div class="candle" style="background:#ffd3a5"></div>
+      <div class="candle" style="background:#ffb3c6"></div>
+      <div class="candle" style="background:#fff6a5"></div>
+      <div class="candle" style="background:#bfffc1"></div>
+      <div class="candle" style="background:#bfe4ff"></div>
+    </div>
+
+    <div class="message" id="message">
+      <img class="sticker" src="img/stitch.png" alt="Cute character" />
+      <h1 id="messageText">Happy Birthday Pari ❤️</h1>
+    </div>
+  </div>
+
+  <canvas id="confetti"></canvas>
+
+<script>
+  // Stacking sequence with staggered timing
+  const layers = [
+    document.getElementById('l1'),
+    document.getElementById('l2'),
+    document.getElementById('l3'),
+    document.getElementById('l4'),
+    document.getElementById('l5'),
+    document.getElementById('l6')
+  ];
+  const candles = document.getElementById('candles');
+  const message = document.getElementById('message');
+  const cake = document.getElementById('cake');
+
+  async function stackLayers() {
+    // Faster stagger timings
+    const baseDelay = 260;
+    for (let i = 0; i < layers.length; i++) {
+      await wait(baseDelay + i * 110);
+      layers[i].classList.add('stack');
+    }
+
+    // quicker reveal timings
+    await wait(260);
+    candles.classList.add('show');
+
+    wiggleCandles();
+
+    await wait(320);
+    message.classList.add('show');
+
+    startConfetti();
+  }
+
+  function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function wiggleCandles(){
+    const c = document.querySelectorAll('.candle');
+    c.forEach((el, idx) => {
+      el.animate([
+        { transform: 'translateY(0) rotate(0deg)' },
+        { transform: 'translateY(-2px) rotate(1deg)' },
+        { transform: 'translateY(0) rotate(0deg)' }
+      ], {
+        duration: 900 + idx*50,
+        iterations: Infinity,
+        direction: 'alternate',
+        easing: 'ease-in-out'
+      });
+    });
+  }
+
+  // ----------------------------
+  // Basic confetti implementation
+  // ----------------------------
+  function startConfetti() {
+    const canvas = document.getElementById('confetti');
+    const ctx = canvas.getContext('2d');
+    resizeCanvas();
+
+    const colors = ['#ff357a','#ff9a00','#ffd100','#00e5a8','#2db1ff','#b18cff','#ffffff'];
+    function computeConfettiCount(){
+      const area = window.innerWidth * window.innerHeight;
+      return Math.max(160, Math.floor(area / 9000));
+    }
+    function createParticle(){
+      return {
+        x: Math.random()*canvas.width,
+        y: Math.random()*-canvas.height,
+        w: 4 + Math.random()*8,
+        h: 4 + Math.random()*8,
+        r: Math.random()*360,
+        speed: 1.5 + Math.random()*3.5,
+        rotSpeed: (Math.random()-0.5)*8,
+        color: colors[Math.floor(Math.random()*colors.length)],
+        drift: (Math.random()-0.5)*2.4
+      };
+    }
+    let confetti = new Array(computeConfettiCount()).fill(0).map(createParticle);
+
+    let raf;
+    function render(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      confetti.forEach((p)=>{
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.r * Math.PI/180);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h);
+        ctx.restore();
+
+        p.y += p.speed;
+        p.x += p.drift;
+        p.r += p.rotSpeed;
+
+        if (p.y > canvas.height + 50) {
+          // recycle to top
+          p.y = -20 - Math.random()*canvas.height*0.5;
+          p.x = Math.random()*canvas.width;
+        }
+      });
+      raf = requestAnimationFrame(render);
+    }
+    render();
+
+    // confetti runs indefinitely
+    // make sure canvas resizes with window and density updates
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      const target = computeConfettiCount();
+      if (target !== confetti.length){
+        confetti = new Array(target).fill(0).map(createParticle);
+      }
+    });
+    function resizeCanvas(){
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+  }
+
+  // Start stacking when page loads
+  window.addEventListener('load', () => {
+    // small intro delay for dramatic effect
+    setTimeout(stackLayers, 400);
+  });
+
+  // Optional: allow personalization by clicking the message
+  message.addEventListener('click', () => {
+    const name = prompt("Who is this for? Enter a name (or leave blank):");
+    if (name !== null) {
+      const textEl = document.getElementById('messageText');
+      textEl.textContent = name.trim() ? `Happy Birthday ${name.trim()} ❤️` : 'Happy Birthday Pari ❤️';
+    }
+  });
+</script>
+</body>
+</html>
